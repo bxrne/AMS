@@ -47,3 +47,39 @@ INSERT INTO REQUEST (EMPLOYEE_ID, ASSET_ID) VALUES (9, 2);
 -- Assignments
 INSERT INTO ASSET_HISTORY (ASSET_ID, EMPLOYEE_ID, REQUEST_ID) VALUES (1, 6, 1);
 INSERT INTO ASSET_HISTORY (ASSET_ID, EMPLOYEE_ID, REQUEST_ID) VALUES (2, 9, 2);
+
+-- DML
+-- View all requests that are not approved
+SELECT * FROM REQUEST WHERE IS_APPROVED != 1 AND IS_OPEN = 1;
+
+-- Approve a request
+UPDATE REQUEST SET IS_APPROVED = 1 WHERE R_ID = 1;
+UPDATE ASSET SET IS_AVAILABLE = 0 WHERE A_ID = 1;
+INSERT INTO ASSET_HISTORY (ASSET_ID, EMPLOYEE_ID, REQUEST_ID) VALUES (1, 6, 1);
+
+-- Assign an asset to a request (for a given request id 1)
+UPDATE REQUEST SET IS_APPROVED = 1 WHERE R_ID = 1;
+
+-- Retire an asset (for a given asset id 1)
+UPDATE ASSET SET IS_RETIRED = 1 WHERE A_ID = 1;
+
+-- View all assets that are not retired and are available
+SELECT * FROM ASSET WHERE IS_RETIRED != 1 AND IS_AVAILABLE = 1;
+
+-- See asset history for a given asset id 1
+SELECT * FROM ASSET_HISTORY WHERE ASSET_ID = 1;
+
+-- See asset history for a given employee id 6
+SELECT * FROM ASSET_HISTORY WHERE EMPLOYEE_ID = 6;
+
+-- Approve an employee (for a given employee id 6)
+UPDATE EMPLOYEE SET IS_APPROVED = 1 WHERE EMPLOYEE_ID = 6;
+
+-- View all employees that are not approved
+SELECT * FROM EMPLOYEE WHERE IS_APPROVED != 1;
+
+-- View all assets
+SELECT * FROM ASSET;
+
+-- Change user 9's dob to 1990-01-01
+UPDATE EMPLOYEE SET DOB = '01-JAN-90' WHERE EMPLOYEE_ID = 9;
