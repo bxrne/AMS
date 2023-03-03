@@ -142,6 +142,46 @@ def assignments():
         assignments = [a for a in assignments if searchQuery.lower() in (a["ASSET_NAME"] + " " + a["EMPLOYEE_NAME"]).lower()]
     return render_template('assignments.html', data=assignments)
 
+@app.route('/requests/<rid>', methods=['GET'])
+def view_request(rid):
+    connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+    cur = connection.cursor()
+    cur.execute("SELECT R_ID, ASSET_ID, EMPLOYEE_ID, IS_OPEN, IS_APPROVED, CREATED_DATE, UPDATED_DATE FROM ASSETMANAGEMENT.REQUEST WHERE R_ID = " + rid)
+    
+    data = {
+        "R_ID": "",
+        "ASSET_NAME": "",
+        "EMPLOYEE_NAME": "",
+        "IS_OPEN": "",
+        "IS_APPROVED": "",
+        "CREATED_DATE": "",
+        "UPDATED_DATE": "Not Updated"
+    }
+
+    cur = cur.fetchone()
+    data["R_ID"] = cur[0]
+    data["IS_OPEN"] = cur[3]    
+    data["IS_APPROVED"] = cur[4]
+    data["CREATED_DATE"] = cur[5].strftime("%d-%b-%Y")
+
+    if cur[6] is not None:
+        data["UPDATED_DATE"] = cur[6].strftime("%d-%b-%Y")
+
+    cur2 = connection.cursor()
+    cur2.execute("SELECT A_NAME FROM ASSETMANAGEMENT.ASSET WHERE A_ID = " + str(cur[1]))
+    cur2 = cur2.fetchone()
+    data["ASSET_NAME"] = cur2[0]
+
+    cur3 = connection.cursor()
+    cur3.execute("SELECT FIRST_NAME, LAST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE EMPLOYEE_ID = " + str(cur[2]))
+    cur3 = cur3.fetchone()
+    data["EMPLOYEE_NAME"] = cur3[0] + " " + cur3[1]
+
+
+    
+
+    return render_template('request.html', data=data)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

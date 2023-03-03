@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}View Request{% endblock %}
+
+{% block header %}
+View Request
+{% endblock %}
+
+{% block content %}
+
+<table class="table table-striped table-responsive">
+  <thead>
+    <tr>
+      <th scope="col">ID</th>            
+      <th scope="col">Asset</th>
+      <th scope="col">Employee</th>
+      <th scope="col">Approved</th>
+	  <th scope="col">Open</th>
+	  <th scope="col">Date</th>
+    </tr>  
+  </thead>
+  <tbody>
+      <tr>
+        <td>{{ data["R_ID"] }}</td>
+        <td>{{ data["ASSET_NAME"] }}</td>
+        <td>{{ data["EMPLOYEE_NAME"] }}</td>
+		<td>{% if data["IS_APPROVED"] %}Yes{% else %}No{% endif %}</td>
+		<td>{% if data["IS_OPEN"] %}Yes{% else %}No{% endif %}</td>
+		<td>{{ data["CREATED_DATE"] }}</td>
+      </tr>
+  </tbody>
+</table>
+{% endblock %}

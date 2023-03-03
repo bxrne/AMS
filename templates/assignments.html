@@ -25,6 +25,7 @@ View Assignments
       <th scope="col">Asset</th>
       <th scope="col">Employee</th>
       <th scope="col">Date</th>
+	  <th scope="col">See Request</th>
     </tr>  
   </thead>
   <tbody>
@@ -34,7 +35,7 @@ View Assignments
         <td>{{ row["ASSET_NAME"] }}</td>
         <td>{{ row["EMPLOYEE_NAME"] }}</td>
 		<td>{{ row["DATE_ASSIGNED"] }}</td>
-
+		<td><a href="/requests/{{ row['REQUEST_ID'] }}">Details</a></td>
       </tr>
     {% endfor %}
   </tbody>
