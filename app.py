@@ -51,7 +51,7 @@ def assets():
         assets = [a for a in assets if searchQuery in a['ANAME']]
     return render_template('assets.html', data=assets)
 
-@app.route('/employees',methods=['GET'])
+@app.route('/employees',methods=['GET', 'POST'])
 def employees():
     emp = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -79,6 +79,9 @@ def employees():
 
     cur.close()
     connection.close()
+    if request.method == 'POST':
+        searchQuery = request.form['searchQuery']
+        emp = [e for e in emp if searchQuery in e['NAME']]
     return render_template('employees.html', data=emp)
 
 
