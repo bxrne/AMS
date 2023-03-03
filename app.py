@@ -19,6 +19,9 @@ employee_view = "SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DOB, IS_PENDING, IS_
 employee_view_job = "SELECT TITLE FROM ASSETMANAGEMENT.JOB WHERE J_ID ="
 employee_view_dept = "SELECT D_NAME FROM ASSETMANAGEMENT.DEPARTMENT WHERE D_ID ="
 
+# REQUEST VIEW
+request_view = "SELECT R_ID, EMPLOYEE_ID, ASSET_ID, IS_OPEN, IS_APPROVED, CREATED_DATE, UPDATED_DATE FROM ASSETMANAGEMENT.REQUEST"
+
 
 app = Flask(__name__)
 
@@ -170,6 +173,44 @@ def assignments():
         assignments = [a for a in assignments if searchQuery.lower() in (a["ASSET_NAME"] + " " + a["EMPLOYEE_NAME"]).lower()]
 
     return render_template('assignments.html', data=assignments)
+
+@app.route('/requests', methods=['GET', 'POST'])
+def requests():
+    requests = []
+    connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+
+    cur = connection.cursor()
+    cur.execute(request_view)
+
+    for row in cur:
+        R_ID, EMPLOYEE_ID, ASSET_ID, IS_OPEN, IS_APPROVED, CREATED_DATE, UPDATED_DATE = row
+
+        cur2 = connection.cursor()  
+        EMPLOYEE_NAME = cur2.execute("SELECT FIRST_NAME, LAST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE EMPLOYEE_ID = " + str(EMPLOYEE_ID)).fetchone() 
+        EMPLOYEE_NAME = EMPLOYEE_NAME[0] + " " + EMPLOYEE_NAME[1]
+
+        ASSET_NAME =  cur2.execute("SELECT A_NAME FROM ASSETMANAGEMENT.ASSET WHERE A_ID = " + str(ASSET_ID)).fetchone()[0]
+
+        _request = {
+            "R_ID": R_ID,
+            "ASSET_NAME": ASSET_NAME,
+            "EMPLOYEE_NAME": EMPLOYEE_NAME,
+            "IS_OPEN": IS_OPEN,
+            "IS_APPROVED": IS_APPROVED,
+            "CREATED_DATE": CREATED_DATE.strftime("%d-%b-%Y"),
+            "UPDATED_DATE": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
+        }
+        requests.append(_request)
+
+    cur.close()
+    connection.close()
+    
+    if request.method == 'POST' and request.form['searchQuery']:
+        searchQuery = request.form['searchQuery']
+        requests = [r for r in requests if searchQuery.lower() in (r["ASSET_NAME"] + " " + r["EMPLOYEE_NAME"]).lower()]
+    
+    return render_template('requests.html', data=requests)
+
 
 @app.route('/requests/<rid>', methods=['GET'])
 def view_request(rid):
