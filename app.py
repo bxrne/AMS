@@ -15,7 +15,7 @@ company_name_view  = "SELECT C_NAME FROM ASSETMANAGEMENT.COMPANY WHERE C_ID ="
 asset_history_view = "SELECT A_H_ID, ASSET_ID, EMPLOYEE_ID, REQUEST_ID, DATE_ASSIGNED FROM ASSETMANAGEMENT.ASSET_HISTORY"
 
 # EMPLOYEE VIEW
-employee_view = "SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DOB, IS_PENDING, IS_APPROVED, JOB_ID, DEPT_ID FROM ASSETMANAGEMENT.EMPLOYEE"
+employee_view = "SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DOB, IS_PENDING, IS_APPROVED, JOB_ID, DEPT_ID, LOGIN_ID FROM ASSETMANAGEMENT.EMPLOYEE"
 employee_view_job = "SELECT TITLE FROM ASSETMANAGEMENT.JOB WHERE J_ID ="
 employee_view_dept = "SELECT D_NAME FROM ASSETMANAGEMENT.DEPARTMENT WHERE D_ID ="
 
@@ -113,12 +113,12 @@ def employees():
     cur.execute(employee_view)
 
     for row in cur:
-        EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DOB, IS_PENDING, IS_APPROVED, JOB_ID, DEPT_ID = row
+        EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DOB, IS_PENDING, IS_APPROVED, JOB_ID, DEPT_ID, LOGIN_ID = row
         
         cur2 = connection.cursor()
         JOB_TITLE = cur2.execute(employee_view_job+str(JOB_ID)).fetchone()[0]
         DEPT_NAME = cur2.execute(employee_view_dept+str(DEPT_ID)).fetchone()[0]
-
+        EMAIL = cur2.execute("SELECT EMAIL_ADDRESS FROM ASSETMANAGEMENT.LOGIN WHERE L_ID="+str(LOGIN_ID)).fetchone()[0]
         employee = {
             "EMPLOYEE_ID": EMPLOYEE_ID,
             "NAME": FIRST_NAME + " " + LAST_NAME,
@@ -126,7 +126,8 @@ def employees():
             "IS_PENDING": IS_PENDING,
             "IS_APPROVED": IS_APPROVED,
             "JOB": JOB_TITLE,
-            "DEPT": DEPT_NAME
+            "DEPT": DEPT_NAME,
+            "EMAIL":EMAIL
         }
         employees.append(employee)
 
@@ -198,7 +199,7 @@ def requests():
             "IS_OPEN": IS_OPEN,
             "IS_APPROVED": IS_APPROVED,
             "CREATED_DATE": CREATED_DATE.strftime("%d-%b-%Y"),
-            "UPDATED_DATE": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
+           "UPDATED_DATE": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
         }
         requests.append(_request)
 
