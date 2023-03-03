@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}View Employees{% endblock %}
+
+{% block header %}
+View Employees
+{% endblock %}
+emp.append({"EMPLOYEE_ID": id, "FIRST_NAME": fname,
+                    "LAST_NAME": lname, "DOB": dob, "IS_PENDING": is_pending, "IS_APPROVED": is_approved, "JOB": job, "DEPT": dept})
+
+{% block content %}
+<table class="table table-striped table-responsive">
+  <thead>
+    <tr>
+      <th scope="col">ID</th>            
+      <th scope="col">Name</th>
+      <th scope="col">Department</th>
+      <th scope="col">Job</th>
+      <th scope="col">Pending</th>
+      <th scope="col">Approved</th>
+    </tr>  
+  </thead>
+  <tbody>
+    {% for row in data %}
+      <tr>
+        <td>{{ row["EMPLOYEE_ID"] }}</td>
+        <td>{{ row["FIRST_NAME"] }} {{ row["LAST_NAME"] }}</td>
+        <td>{{ row["DEPT"] }}</td>
+		<td>{{ row["JOB"] }}</td>
+        <td>{% if row['IS_APPROVED'] %}Yes{% else %}No{% endif %}</td>
+        <td>{% if row["IS_PENDING"] %}Yes{% else %}No{% endif %}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
