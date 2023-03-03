@@ -1,5 +1,5 @@
 import datetime
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import oracledb
 
 user = 'SYSTEM'
@@ -22,7 +22,7 @@ def home():
     return render_template('home.html')
 
 
-@app.route('/assets',methods=['GET'])
+@app.route('/assets',methods=['GET', 'POST'])
 def assets():
     assets = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -45,6 +45,10 @@ def assets():
                     "ABRAND": row[2], "ACOMPANY":company, "AMODEL": row[4], "IS_AVAILABLE": row[5], "IS_RETIRED": row[6], "CREATED": row[7].strftime("%d-%b-%Y"), "UPDATED": updated })
     cur.close()
     connection.close()
+
+    if request.method == 'POST':
+        searchQuery = request.form['searchQuery']
+        assets = [a for a in assets if searchQuery in a['ANAME']]
     return render_template('assets.html', data=assets)
 
 @app.route('/employees',methods=['GET'])
