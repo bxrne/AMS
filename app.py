@@ -46,7 +46,7 @@ def assets():
     cur.close()
     connection.close()
 
-    if request.method == 'POST':
+    if request.method == 'POST' and request.form['searchQuery']:
         searchQuery = request.form['searchQuery']
         assets = [a for a in assets if searchQuery in a['ANAME']]
     return render_template('assets.html', data=assets)
@@ -79,7 +79,7 @@ def employees():
 
     cur.close()
     connection.close()
-    if request.method == 'POST':
+    if request.method == 'POST' and request.form['searchQuery']:
         searchQuery = request.form['searchQuery']
         emp = [e for e in emp if searchQuery in e['NAME']]
     return render_template('employees.html', data=emp)
