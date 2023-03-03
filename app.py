@@ -114,6 +114,33 @@ def employees():
     return render_template('employees.html', data=emp)
 
 
+@app.route('/assignments', methods=['GET', 'POST'])
+def assignments():
+    assignments = []
+    connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+    cur = connection.cursor()
+    cur.execute("SELECT A_H_ID, ASSET_ID, EMPLOYEE_ID, REQUEST_ID, DATE_ASSIGNED FROM ASSETMANAGEMENT.ASSET_HISTORY")
+    for row in cur:
+        emp = ""
+        asset = ""
+        cur2 = connection.cursor()
+        cur2.execute("SELECT FIRST_NAME, LAST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE EMPLOYEE_ID = " + str(row[2]))
+
+        for row2 in cur2:
+            emp = row2[0] + " " + row2[1]
+        cur2.close()
+
+        cur3 = connection.cursor()
+        cur3.execute("SELECT A_NAME FROM ASSETMANAGEMENT.ASSET WHERE A_ID = " + str(row[1]))
+        for row3 in cur3:
+            asset = row3[0]
+        cur3.close()
+
+        assignments.append({"A_H_ID": row[0], "ASSET_NAME": asset, "EMPLOYEE_NAME": emp, "REQUEST_ID": row[3], "DATE_ASSIGNED": row[4].strftime("%d-%b-%Y")})
+    if request.method == 'POST' and request.form['searchQuery']:
+        searchQuery = request.form['searchQuery']
+        assignments = [a for a in assignments if searchQuery.lower() in (a["ASSET_NAME"] + " " + a["EMPLOYEE_NAME"]).lower()]
+    return render_template('assignments.html', data=assignments)
 
 
 if __name__ == '__main__':
