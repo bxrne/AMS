@@ -1,34 +1,42 @@
-#!/usr/bin/env python3
-from flask import Flask, redirect, render_template, request, url_for
+import datetime
+from flask import Flask, request, render_template
 import oracledb
-
-
+# Replace with your actual Oracle database credentials
+user = 'SYSTEM'
+password = 'root'
+port = 1521
+service_name = 'XE'
+conn_string = "localhost:{port}/{service_name}".format(
+    port=port, service_name=service_name)
 app = Flask(__name__)
-user = "SYSTEM"
-password = "root"
-dsn = "localhost:1521/XE"
+data = []
+id = []
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        employeeID = request.args.get("employeeID")
-        dob = request.args.get("dob")
-
-        print(employeeID)
-        print(dob)
-
-        return render_template('index.html')
-     
-    else:
-        # connection = oracledb.connect(user=user, password=password, dsn=dsn)
-        # cur = connection.cursor()
-        # cur.execute("SELECT FIRST_NAME FROM HR.EMPLOYEES WHERE EMPLOYEE_ID = 101")
-        # x = cur.fetchone()
-        # cur.close()
-        # connection.close()
-
-        return render_template('index.html' )
+@app.route('/')
+def home():
+    return render_template('home.html')
 
 
-if __name__=="__main__":
-    app.run(host='127.0.0.1',port=4455,debug=True) 
+@app.route('/assets',methods=['GET'])
+def update():
+    assets = []
+    connection = oracledb.connect(
+        user=user, password=password, dsn=conn_string)
+    cur = connection.cursor()
+    cur.execute('SELECT A_ID, A_NAME, A_MODEL, IS_AVAILABLE, IS_RETIRED, CREATED_DATE FROM ASSETMANAGEMENT.ASSET')
+    for row in cur:
+        assets.append({"AID": row[0], "ANAME": row[1],
+                    "AMODEL": row[2], "IS_AVAILABLE": row[3], "IS_RETIRED": row[4], "CREATED_DATE": row[5].strftime("%d-%b-%Y")})
+    # Close the cursor and connection
+    cur.close()
+    connection.close()
+    # Pass the data to the template to display in the HTML table
+    return render_template('assets.html', data=assets)
+    #return render_template('about.html')
+
+
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
