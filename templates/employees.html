@@ -28,6 +28,7 @@ View Employees
       <th scope="col">Pending</th>
       <th scope="col">Approved</th>
       <th scope="col">DOB</th>
+      <th scope="col">EMAIL</th>
     </tr>  
   </thead>
   <tbody>
@@ -40,6 +41,7 @@ View Employees
         <td>{% if row['IS_APPROVED'] %}Yes{% else %}No{% endif %}</td>
         <td>{% if row["IS_PENDING"] %}Yes{% else %}No{% endif %}</td>
         <td>{{ row["DOB"] }}</td>
+        <td><a href="mailto:{{ row['EMAIL'] }}"><span class="fa fa-envelope"></span></a></td>
       </tr>
     {% endfor %}
   </tbody>
