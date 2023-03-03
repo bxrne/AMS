@@ -32,6 +32,7 @@ View Assets
       <th scope="col">Retired</th>
       <th scope="col">Created</th>
       <th scope="col">Updated</th>
+      <th scope="col">Edit</th>
     </tr>  
   </thead>
   <tbody>
@@ -46,6 +47,7 @@ View Assets
         <td>{% if row["IS_RETIRED"] %}Yes{% else %}No{% endif %}</td>
         <td>{{ row["CREATED"] }}</td>
         <td>{{ row["UPDATED"] }}</td>
+        <td><a href="/assets/edit/{{ row['AID'] }}"><span class="fa fa-edit"></span></a></td>
       </tr>
     {% endfor %}
   </tbody>

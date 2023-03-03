@@ -1,4 +1,3 @@
-import datetime
 from flask import Flask, render_template, request
 import oracledb
 
@@ -48,8 +47,38 @@ def assets():
 
     if request.method == 'POST' and request.form['searchQuery']:
         searchQuery = request.form['searchQuery']
-        assets = [a for a in assets if searchQuery in a['ANAME']]
+        assets = [a for a in assets if searchQuery.lower() in a['ANAME'].lower()]
     return render_template('assets.html', data=assets)
+
+@app.route('/assets/edit/<aid>', methods=['GET'])
+def edit_asset(aid):
+    connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+    cur = connection.cursor()
+    cur.execute(asset_view + " WHERE A_ID = " + aid)
+    cur = cur.fetchone()
+    asset = {}
+    company = ""
+
+    cur2 = connection.cursor()
+    cur2.execute("SELECT C_NAME FROM ASSETMANAGEMENT.COMPANY WHERE C_ID = " + str(cur[3]))
+    cur2 = cur2.fetchone()
+    company = cur2[0]
+    connection.close()
+
+    updated = cur[8]
+
+    if updated is None:
+        updated = "Not Updated"
+    else:
+        updated = updated.strftime("%d-%b-%Y")
+
+
+
+    asset = {"AID": cur[0], "ANAME": cur[1],
+                    "ABRAND": cur[2], "ACOMPANY":company, "AMODEL": cur[4], "IS_AVAILABLE": cur[5], "IS_RETIRED": cur[6], "CREATED": cur[7].strftime("%d-%b-%Y"), "UPDATED": updated }
+
+    return render_template('edit_asset.html', asset=asset)
+
 
 @app.route('/employees',methods=['GET', 'POST'])
 def employees():
@@ -81,7 +110,7 @@ def employees():
     connection.close()
     if request.method == 'POST' and request.form['searchQuery']:
         searchQuery = request.form['searchQuery']
-        emp = [e for e in emp if searchQuery in e['NAME']]
+        emp = [e for e in emp if searchQuery.lower() in e['NAME'].lower()]
     return render_template('employees.html', data=emp)
 
 
