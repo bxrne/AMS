@@ -12,10 +12,13 @@ View Assets
     <tr>
       <th scope="col">ID</th>            
       <th scope="col">Name</th>
+      <th scope="col">Brand</th>
       <th scope="col">Model</th>
+      <th scope="col">Company</th>
       <th scope="col">Available</th>
       <th scope="col">Retired</th>
       <th scope="col">Created</th>
+      <th scope="col">Updated</th>
     </tr>  
   </thead>
   <tbody>
@@ -23,10 +26,13 @@ View Assets
       <tr>
         <td>{{ row["AID"] }}</td>
         <td>{{ row["ANAME"] }}</td>
+        <td>{{ row["ABRAND"] }}</td>
         <td>{{ row["AMODEL"] }}</td>
+        <td>{{ row["ACOMPANY"] }}</td>
         <td>{% if row['IS_AVAILABLE'] %}Yes{% else %}No{% endif %}</td>
         <td>{% if row["IS_RETIRED"] %}Yes{% else %}No{% endif %}</td>
-        <td>{{ row["CREATED_DATE"] }}</td>
+        <td>{{ row["CREATED"] }}</td>
+        <td>{{ row["UPDATED"] }}</td>
       </tr>
     {% endfor %}
   </tbody>

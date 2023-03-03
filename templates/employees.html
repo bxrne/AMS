@@ -17,17 +17,19 @@ emp.append({"EMPLOYEE_ID": id, "FIRST_NAME": fname,
       <th scope="col">Job</th>
       <th scope="col">Pending</th>
       <th scope="col">Approved</th>
+      <th scope="col">DOB</th>
     </tr>  
   </thead>
   <tbody>
     {% for row in data %}
       <tr>
         <td>{{ row["EMPLOYEE_ID"] }}</td>
-        <td>{{ row["FIRST_NAME"] }} {{ row["LAST_NAME"] }}</td>
+        <td>{{ row["NAME"] }}</td>
         <td>{{ row["DEPT"] }}</td>
-		<td>{{ row["JOB"] }}</td>
+		    <td>{{ row["JOB"] }}</td>
         <td>{% if row['IS_APPROVED'] %}Yes{% else %}No{% endif %}</td>
         <td>{% if row["IS_PENDING"] %}Yes{% else %}No{% endif %}</td>
+        <td>{{ row["DOB"] }}</td>
       </tr>
     {% endfor %}
   </tbody>

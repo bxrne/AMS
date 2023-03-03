@@ -8,6 +8,12 @@ port = 1521
 service_name = 'XE'
 conn_string = "localhost:{port}/{service_name}".format(port=port, service_name=service_name)
 
+employee_view = "SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DOB, IS_PENDING, IS_APPROVED, JOB_ID, DEPT_ID FROM ASSETMANAGEMENT.EMPLOYEE"
+employee_view_job = "SELECT TITLE FROM ASSETMANAGEMENT.JOB WHERE J_ID ="
+employee_view_dept = "SELECT D_NAME FROM ASSETMANAGEMENT.DEPARTMENT WHERE D_ID ="
+
+asset_view = "SELECT A_ID, A_NAME, BRAND, COMPANY_ID,  A_MODEL, IS_AVAILABLE, IS_RETIRED, CREATED_DATE, UPDATED_DATE FROM ASSETMANAGEMENT.ASSET"
+
 app = Flask(__name__)
 
 
@@ -21,10 +27,22 @@ def assets():
     assets = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
     cur = connection.cursor()
-    cur.execute('SELECT A_ID, A_NAME, A_MODEL, IS_AVAILABLE, IS_RETIRED, CREATED_DATE FROM ASSETMANAGEMENT.ASSET')
+    cur.execute(asset_view)
     for row in cur:
+        company = ""
+        cur2 = connection.cursor()
+        cur2.execute("SELECT C_NAME FROM ASSETMANAGEMENT.COMPANY WHERE C_ID = " + str(row[3]))
+        for row2 in cur2:
+            company = row2[0]
+        cur2.close()
+
+        updated = row[8]
+        if updated is None:
+            updated = "Not Updated"
+        else:
+            updated = updated.strftime("%d-%b-%Y")
         assets.append({"AID": row[0], "ANAME": row[1],
-                    "AMODEL": row[2], "IS_AVAILABLE": row[3], "IS_RETIRED": row[4], "CREATED_DATE": row[5].strftime("%d-%b-%Y")})
+                    "ABRAND": row[2], "ACOMPANY":company, "AMODEL": row[4], "IS_AVAILABLE": row[5], "IS_RETIRED": row[6], "CREATED": row[7].strftime("%d-%b-%Y"), "UPDATED": updated })
     cur.close()
     connection.close()
     return render_template('assets.html', data=assets)
@@ -34,33 +52,26 @@ def employees():
     emp = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
     cur = connection.cursor()
-    cur.execute("SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, DOB, IS_PENDING, IS_APPROVED, JOB_ID, DEPT_ID FROM ASSETMANAGEMENT.EMPLOYEE")
+    cur.execute(employee_view)
+
+    # Subqueries for job and dept
     for row in cur:
-        id = row[0]
-        fname = row[1]
-        lname = row[2]
-        dob = row[3].strftime("%d-%b-%Y")
-        is_pending = row[4]
-        is_approved = row[5]
-        job_id = row[6]
-        dept_id = row[7]
         job = ""
         dept = ""
 
         cur2 = connection.cursor()
-        cur2.execute("SELECT TITLE FROM ASSETMANAGEMENT.JOB WHERE J_ID ="+str(job_id)+"")
+        cur2.execute(employee_view_job+str(row[6]))
         for row2 in cur2:
             job = row2[0]
         cur2.close()
 
         cur3 = connection.cursor()
-        cur3.execute("SELECT D_NAME FROM ASSETMANAGEMENT.DEPARTMENT WHERE D_ID ="+str(dept_id)+"")
+        cur3.execute(employee_view_dept+str(row[7]))
         for row3 in cur3:
             dept = row3[0]
         cur3.close()
 
-        emp.append({"EMPLOYEE_ID": id, "FIRST_NAME": fname,
-                    "LAST_NAME": lname, "DOB": dob, "IS_PENDING": is_pending, "IS_APPROVED": is_approved, "JOB": job, "DEPT": dept})
+        emp.append({"EMPLOYEE_ID": row[0], "NAME": row[1] + " " + row[2], "DOB": row[3].strftime("%d-%b-%Y"), "IS_PENDING": row[4], "IS_APPROVED": row[5], "JOB": job, "DEPT": dept})
 
     cur.close()
     connection.close()
