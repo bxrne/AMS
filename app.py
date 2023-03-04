@@ -191,7 +191,53 @@ def view_request(rid):
 
     return render_template('request.html', data=data)
 
+#Create Asset
+@app.route('/assets/create/', methods=['GET', 'POST'])
+def create_asset():
+    if request.method == 'GET':
+        return render_template('create_asset.html')
+    
+    if request.method == 'POST':
+        print("POST")
+        print(request.form)
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
 
-
+        #Check for empty fields
+        if request.form['name'] == "" or request.form['brand'] == "" or request.form['company'] == "" or request.form['model'] == "":
+            return render_template('create_asset.html', error="Please fill in all fields")
+        #checkboxes are not included in request.form if they are not checked. If they are not checked, set them to 0
+        #if they are checked, set them to 1, not "on"
+        if 'available' not in request.form:
+            available = 0
+        else:
+            available = 1
+        if 'retired' not in request.form:
+            retired = 0
+        else:
+            retired = 1
+        
+        #check if company exists
+        cur3 = connection.cursor()
+        cur3.execute("SELECT C_ID FROM ASSETMANAGEMENT.COMPANY WHERE C_NAME = '" + request.form['company'] + "'")
+        cur3 = cur3.fetchone()
+        print(cur3)
+        if cur3 == None:
+            #company does not exist, create it
+            cur5 = connection.cursor()
+            cur5.execute(f"INSERT INTO ASSETMANAGEMENT.COMPANY VALUES (DEFAULT, '{request.form['company']}')")
+            connection.commit()
+            cid = cur5.lastrowid
+            cur5.close()
+        else:
+            cid = cur3[0]
+        
+        cur2 = connection.cursor()
+        cur2.execute(f"INSERT INTO ASSETMANAGEMENT.ASSET VALUES (DEFAULT, '{request.form['name']}', '{request.form['brand']}', '{cid}', '{request.form['model']}', {available}, {retired}, CURRENT_TIMESTAMP, NULL)")
+        connection.commit()
+        cur2.close()
+        connection.close()
+        return redirect(url_for('assets'))
+    
+    
 if __name__ == '__main__':
     app.run(debug=True)
