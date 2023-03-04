@@ -5,7 +5,7 @@ import oracledb
 user = 'SYSTEM'
 password = 'root'
 port = 1521
-service_name = 'XEPDB1' # XE or XEPDB1 depending on your setup version
+service_name = 'XE' # XE or XEPDB1 depending on your setup version
 conn_string = "localhost:{port}/{service_name}".format(port=port, service_name=service_name)
 
 # ASSET VIEW
@@ -31,7 +31,16 @@ def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         if 'uuid' in session:
+            # check if employee is approved
+            connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+            cur = connection.cursor()
+            u = cur.execute("SELECT IS_APPROVED FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid']) + "").fetchone()[0]
+            if u == 0:
+                flash('You are not approved yet.')
+                return redirect(url_for('home'))
+                
             return f(*args, **kwargs)
+            
         else:
             flash('You need to login first.')
             return redirect(url_for('login'))
@@ -43,8 +52,8 @@ def coordinator_required(f):
         if 'uuid' in session:
             connection = oracledb.connect(user=user, password=password, dsn=conn_string)
             cur = connection.cursor()
-            u = cur.execute("SELECT JOB_ID FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid']) + "").fetchone()[0]
-            if u == 1:
+            xx = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.COORDINATOR WHERE EMPLOYEE_ID = " + str(session['uuid']))
+            if xx is not None:
                 return f(*args, **kwargs)
             else:
                 flash('You are not a coordinator.')
@@ -402,6 +411,19 @@ def logout():
     session.pop('uuid', None)
     flash('You were logged out')
     return redirect(url_for('login'))
+
+@app.route('/employees/approve/<int:id>')
+@coordinator_required
+def approve_employee(id):
+    connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+
+    cur = connection.cursor()
+    cur.execute("UPDATE ASSETMANAGEMENT.EMPLOYEE SET IS_APPROVED = 1, IS_PENDING=0 WHERE EMPLOYEE_ID = " + str(id))
+    connection.commit()
+    cur.close()
+    connection.close()
+    return redirect(url_for('employees'))
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
