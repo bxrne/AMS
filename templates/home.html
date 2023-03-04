@@ -1,11 +1,23 @@
 {% extends 'base.html' %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Asset Management System{% endblock %}
 
 {% block header %}
-Home
+Asset Management System
 {% endblock %}
 
 {% block content %}
-<h3>Welcome to the AMS</h3>
+{% if data %}
+	<h3>Welcome {{data}}</h3>
+
+	<a class="w-100 btn btn-lg btn-primary mb-3" href="/logout">Logout</a>
+
+	{% else %}
+
+
+<div class=" flex-column d-flex justify-content-center align-items-center">
+	<a class="w-75 btn btn-lg btn-outline-primary mb-3" href="/login">Login</a>
+	<a class="w-75 btn btn-lg btn-primary" href="/assets">Sign Up</a>
+</div>
+{% endif %}
 {% endblock %}
