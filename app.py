@@ -5,7 +5,7 @@ import oracledb
 user = 'SYSTEM'
 password = 'root'
 port = 1521
-service_name = 'XE' # XE or XEPDB1 depending on your setup version
+service_name = 'XEPDB1' # XE or XEPDB1 depending on your setup version
 conn_string = "localhost:{port}/{service_name}".format(port=port, service_name=service_name)
 
 # ASSET VIEW
@@ -286,6 +286,7 @@ def view_request(rid):
 
 #Create Asset
 @app.route('/assets/create/', methods=['GET', 'POST'])
+@login_required
 def create_asset():
     if request.method == 'GET':
         return render_template('create_asset.html')
@@ -331,6 +332,52 @@ def create_asset():
         connection.close()
         return redirect(url_for('assets'))
     
+# Create request
+@app.route('/requests/create/', methods=['GET', 'POST'])
+@login_required
+def create_request():
+    if request.method == 'GET':
+        assets = []
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+
+        cur = connection.cursor()
+        cur = cur.execute("SELECT A_ID, A_NAME, BRAND, COMPANY_ID,  A_MODEL, IS_AVAILABLE, IS_RETIRED, CREATED_DATE, UPDATED_DATE FROM ASSETMANAGEMENT.ASSET WHERE IS_AVAILABLE = 1 AND IS_RETIRED = 0")
+        for row in cur:
+            A_ID, A_NAME, BRAND, COMPANY_ID,  A_MODEL, IS_AVAILABLE, IS_RETIRED, CREATED_DATE, UPDATED_DATE = row
+
+            cur2 = connection.cursor()
+            COMPANY_NAME = cur2.execute(company_name_view + str(COMPANY_ID)).fetchone()[0]
+
+            asset = {
+                "AID": A_ID,
+                "ANAME": A_NAME,
+                "ABRAND": BRAND,
+                "ACOMPANY": COMPANY_NAME,
+                "AMODEL": A_MODEL,
+                "IS_AVAILABLE": IS_AVAILABLE,
+                "IS_RETIRED": IS_RETIRED,
+                "CREATED": CREATED_DATE.strftime("%d-%b-%Y"),
+                "UPDATED": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
+            }
+            assets.append(asset)
+
+        cur.close()
+        cur2 = connection.cursor()
+        cur2.execute("SELECT FIRST_NAME, LAST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE EMPLOYEE_ID = " + str(session['uuid']))
+        cur2 = cur2.fetchone()
+        name = cur2[0] + " " + cur2[1]
+        connection.close()
+        return render_template('create_request.html', assets=assets, name=name)
+    
+    if request.method == 'POST':
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+
+        cur = connection.cursor()
+        cur.execute(f"INSERT INTO ASSETMANAGEMENT.REQUEST VALUES (DEFAULT, {session['uuid']}, {request.form['request']}, 1, 0, CURRENT_TIMESTAMP, NULL)")
+        connection.commit()
+        cur.close()
+        connection.close()
+        return redirect(url_for('requests'))
     
 @app.route('/login', methods=['GET', 'POST'])
 def login():
