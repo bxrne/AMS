@@ -1,4 +1,5 @@
-from flask import Flask, redirect, render_template, request, url_for
+from functools import wraps
+from flask import Flask, flash, redirect, render_template, request, url_for, session
 import oracledb
 
 user = 'SYSTEM'
@@ -24,14 +25,52 @@ request_view = "SELECT R_ID, EMPLOYEE_ID, ASSET_ID, IS_OPEN, IS_APPROVED, CREATE
 
 
 app = Flask(__name__)
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+
+def login_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'uuid' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('You need to login first.')
+            return redirect(url_for('login'))
+    return wrap
+
+def coordinator_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'uuid' in session:
+            connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+            cur = connection.cursor()
+            u = cur.execute("SELECT JOB_ID FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid']) + "").fetchone()[0]
+            if u == 1:
+                return f(*args, **kwargs)
+            else:
+                flash('You are not a coordinator.')
+                return redirect(url_for('home'))
+        else:
+            flash('You need to login first.')
+            return redirect(url_for('login'))
+    return wrap
+
 
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    u = session['uuid'] if 'uuid' in session else None
+    
+    if u is not None:
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+        cur = connection.cursor()
+        u = cur.execute("SELECT FIRST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(u) + "").fetchone()[0]
+
+    
+    return render_template('home.html', data=u)
 
 
 @app.route('/assets',methods=['GET', 'POST'])
+@login_required
 def assets():
     assets = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -67,6 +106,7 @@ def assets():
     return render_template('assets.html', data=assets)
 
 @app.route('/assets/edit/<aid>', methods=['GET', "POST"])
+@login_required
 def edit_asset(aid):
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
     cur = connection.cursor()
@@ -105,6 +145,7 @@ def edit_asset(aid):
     return render_template('edit_asset.html', asset=asset)
 
 @app.route('/employees',methods=['GET', 'POST'])
+@coordinator_required
 def employees():
     employees = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -142,6 +183,7 @@ def employees():
 
 
 @app.route('/assignments', methods=['GET', 'POST'])
+@login_required
 def assignments():
     assignments = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -176,6 +218,7 @@ def assignments():
     return render_template('assignments.html', data=assignments)
 
 @app.route('/requests', methods=['GET', 'POST'])
+@login_required
 def requests():
     requests = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -214,6 +257,7 @@ def requests():
 
 
 @app.route('/requests/<rid>', methods=['GET'])
+@login_required
 def view_request(rid):
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
     
@@ -238,6 +282,30 @@ def view_request(rid):
     }
 
     return render_template('request.html', data=data)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+
+        email = request.form['email']
+        lpassword = request.form['password']
+        cur = connection.cursor()
+        cur.execute("SELECT L_ID FROM ASSETMANAGEMENT.LOGIN WHERE EMAIL_ADDRESS = '" + email + "' AND L_PASSWORD = '" + lpassword + "'")
+        result = cur.fetchone()[0]
+        uuid = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(result)).fetchone()[0]
+        if result is None:
+            return render_template('login.html', error="Invalid Credentials")
+        else:
+            session['uuid'] = result
+            return redirect(url_for('home'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('uuid', None)
+    flash('You were logged out')
+    return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
