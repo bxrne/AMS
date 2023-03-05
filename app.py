@@ -301,8 +301,6 @@ def create_asset():
         return render_template('create_asset.html')
     
     if request.method == 'POST':
-        print("POST")
-        print(request.form)
         connection = oracledb.connect(user=user, password=password, dsn=conn_string)
 
         #Check for empty fields
@@ -323,14 +321,16 @@ def create_asset():
         cur3 = connection.cursor()
         cur3.execute("SELECT C_ID FROM ASSETMANAGEMENT.COMPANY WHERE C_NAME = '" + request.form['company'] + "'")
         cur3 = cur3.fetchone()
-        print(cur3)
         if cur3 == None:
             #company does not exist, create it
             cur5 = connection.cursor()
             cur5.execute(f"INSERT INTO ASSETMANAGEMENT.COMPANY VALUES (DEFAULT, '{request.form['company']}')")
             connection.commit()
-            cid = cur5.lastrowid
             cur5.close()
+            #set cid to the id of the company we just created
+            cur4 = connection.cursor()
+            cur4.execute("SELECT C_ID FROM ASSETMANAGEMENT.COMPANY WHERE C_NAME = '" + request.form['company'] + "'")
+            cid = cur4.fetchone()[0]
         else:
             cid = cur3[0]
         
