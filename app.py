@@ -79,10 +79,14 @@ def home():
     if u is not None:
         connection = oracledb.connect(user=user, password=password, dsn=conn_string)
         cur = connection.cursor()
-        u = cur.execute("SELECT FIRST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(u) + "").fetchone()[0]
-
-    
-    return render_template('home.html', data=u)
+        name = cur.execute("SELECT FIRST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(u) + "").fetchone()[0]
+        myrequests = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYREQUESTS WHERE E_ID = " + str(u) + "").fetchall()
+        cur.close()
+        cur = connection.cursor()
+        myassets = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYASSETS WHERE E_ID = " + str(u) + "").fetchall()
+        cur.close()
+        connection.close()
+    return render_template('home.html', name=name, myrequests=myrequests, myassets=myassets)
 
 
 @app.route('/assets',methods=['GET', 'POST'])
@@ -432,7 +436,6 @@ def approve_request():
         cur = connection.cursor()
         cur.execute("SELECT * FROM ASSETMANAGEMENT.REQUEST WHERE R_ID = " + request.form['request'])
         cur = cur.fetchone()
-        print(cur[0])
         employee_id = cur[1]
         asset_id = cur[2]
         cur = connection.cursor()
