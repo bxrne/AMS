@@ -123,6 +123,7 @@ def assets():
 
 @app.route('/assets/edit/<aid>', methods=['GET', "POST"])
 @login_required
+@coordinator_required
 def edit_asset(aid):
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
     cur = connection.cursor()
@@ -222,7 +223,9 @@ def assignments():
             "REQUEST_ID": REQUEST_ID,
             "DATE_ASSIGNED": DATE_ASSIGNED.strftime("%d-%b-%Y")
         }
-        assignments.append(asset)
+        # View all if coordinator, only yours in employee
+        if is_coordinator(session["uuid"]) or (not is_coordinator(session["uuid"]) and session["uuid"] == EMPLOYEE_ID):
+            assignments.append(asset)
 
     cur.close()
     connection.close()
@@ -260,7 +263,11 @@ def requests():
             "CREATED_DATE": CREATED_DATE.strftime("%d-%b-%Y"),
            "UPDATED_DATE": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
         }
-        requests.append(_request)
+        if not is_coordinator(session["uuid"]):
+            if EMPLOYEE_ID == session["uuid"]:
+                requests.append(_request)
+        else:
+            requests.append(_request)
 
     cur.close()
     connection.close()
@@ -268,8 +275,6 @@ def requests():
     if request.method == 'POST' and request.form['searchQuery']:
         searchQuery = request.form['searchQuery']
         requests = [r for r in requests if searchQuery.lower() in (r["ASSET_NAME"] + " " + r["EMPLOYEE_NAME"]).lower()]
-    print(session["uuid"])
-    print(is_coordinator(session["uuid"]))
     return render_template('requests.html', data=requests, coordinator=is_coordinator(session["uuid"]))
 
 @app.route('/requests/<rid>', methods=['GET'])
@@ -279,7 +284,9 @@ def view_request(rid):
     
     cur = connection.cursor()
     R_ID, ASSET_ID, EMPLOYEE_ID, IS_OPEN, IS_APPROVED, CREATED_DATE, UPDATED_DATE = cur.execute("SELECT R_ID, ASSET_ID, EMPLOYEE_ID, IS_OPEN, IS_APPROVED, CREATED_DATE, UPDATED_DATE FROM ASSETMANAGEMENT.REQUEST WHERE R_ID = " + rid).fetchone()
-    
+    if EMPLOYEE_ID != session["uuid"] and not is_coordinator(session["uuid"]):
+        flash("You are not authorized to view this request")
+        return redirect(url_for('home'))
     ASSET_NAME = cur.execute("SELECT A_NAME FROM ASSETMANAGEMENT.ASSET WHERE A_ID = " + str(ASSET_ID)).fetchone()[0]
 
     EMPLOYEE_NAME = cur.execute("SELECT FIRST_NAME, LAST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE EMPLOYEE_ID = " + str(EMPLOYEE_ID)).fetchone()
@@ -303,6 +310,7 @@ def view_request(rid):
 #Create Asset
 @app.route('/assets/create/', methods=['GET', 'POST'])
 @login_required
+@coordinator_required
 def create_asset():
     if request.method == 'GET':
         return render_template('create_asset.html')
@@ -447,6 +455,7 @@ def approve_request():
         return redirect(url_for('requests'))
 
 @app.route('/logout')
+@login_required
 def logout():
     session.pop('uuid', None)
     flash('You were logged out')
