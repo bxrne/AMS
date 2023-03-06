@@ -54,7 +54,14 @@ def coordinator_required(f):
             return redirect(url_for('login'))
     return wrap
 
-
+def is_coordinator(uuid):
+    connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+    cur = connection.cursor()
+    xx = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.COORDINATOR WHERE EMPLOYEE_ID = " + str(uuid))
+    if xx is not None:
+        return True
+    else:
+        return False
 
 @app.route('/')
 def home():
@@ -252,9 +259,9 @@ def requests():
     if request.method == 'POST' and request.form['searchQuery']:
         searchQuery = request.form['searchQuery']
         requests = [r for r in requests if searchQuery.lower() in (r["ASSET_NAME"] + " " + r["EMPLOYEE_NAME"]).lower()]
-    
-    return render_template('requests.html', data=requests)
-
+    print(session["uuid"])
+    print(is_coordinator(session["uuid"]))
+    return render_template('requests.html', data=requests, coordinator=is_coordinator(session["uuid"]))
 
 @app.route('/requests/<rid>', methods=['GET'])
 @login_required
@@ -297,8 +304,7 @@ def create_asset():
         #Check for empty fields
         if request.form['name'] == "" or request.form['brand'] == "" or request.form['company'] == "" or request.form['model'] == "":
             return render_template('create_asset.html', error="Please fill in all fields")
-        #checkboxes are not included in request.form if they are not checked. If they are not checked, set them to 0
-        #if they are checked, set them to 1, not "on"
+        #checkboxes are not included in request.form if they are not checked.
         if 'available' not in request.form:
             available = 0
         else:
@@ -323,6 +329,7 @@ def create_asset():
             cur4.execute("SELECT C_ID FROM ASSETMANAGEMENT.COMPANY WHERE C_NAME = '" + request.form['company'] + "'")
             cid = cur4.fetchone()[0]
         else:
+            #company exists, set cid to the id of the company, happy path
             cid = cur3[0]
         
         cur2 = connection.cursor()
@@ -396,6 +403,39 @@ def login():
             session['uuid'] = result
             return redirect(url_for('home'))
     return render_template('login.html')
+
+#Create Assignment
+"""
+Request becomes not open
+Asset becomes not available
+assignment logged in asset history
+"""
+@app.route('/assignment/approve/', methods=['POST'])
+@login_required
+@coordinator_required
+def approve_request():
+    if request.method == 'POST':
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+        cur = connection.cursor()
+        cur.execute("SELECT * FROM ASSETMANAGEMENT.REQUEST WHERE R_ID = " + request.form['request'])
+        cur = cur.fetchone()
+        print(cur[0])
+        employee_id = cur[1]
+        asset_id = cur[2]
+        cur = connection.cursor()
+        cur.execute("UPDATE ASSETMANAGEMENT.ASSET SET IS_AVAILABLE = 0 WHERE A_ID = " + str(asset_id))
+        connection.commit()
+        cur.close()
+        cur = connection.cursor()
+        cur.execute("UPDATE ASSETMANAGEMENT.REQUEST SET IS_OPEN = 0 WHERE R_ID = " + str(request.form['request']))
+        connection.commit()
+        cur.close()
+        cur = connection.cursor()
+        cur.execute(f"INSERT INTO ASSETMANAGEMENT.ASSET_HISTORY VALUES (DEFAULT, {asset_id}, {employee_id}, {request.form['request']}, DEFAULT, NULL)")
+        connection.commit()
+        cur.close()
+        connection.close()
+        return redirect(url_for('requests'))
 
 @app.route('/logout')
 def logout():

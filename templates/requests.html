@@ -34,17 +34,21 @@ View Requests
   </thead>
   <tbody>
     {% for row in data %}
+    <form action="/assignment/approve" method="post">
       <tr>
-        <td>{{ row["R_ID"] }}</td>
-        <td>{{ row["ASSET_NAME"] }}</td>
-        <td>{{ row["EMPLOYEE_NAME"] }}</td>
-		<td>{% if data["IS_OPEN"] %}Yes{% else %}No{% endif %}</td>
-		<td>{% if data["IS_APPROVED"] %}Yes{% else %}No{% endif %}</td>
-		<td>{{ row["CREATED_DATE"] }}</td>
-		<td>{{ row["UPDATED_DATE"] }}</td>
-
-	</tr>
-    {% endfor %}
-  </tbody>
+          <td>{{ row["R_ID"] }}</td>
+          <td>{{ row["ASSET_NAME"] }}</td>
+          <td>{{ row["EMPLOYEE_NAME"] }}</td>
+          <td>{% if data["IS_OPEN"] %}Yes{% else %}No{% endif %}</td>
+          <td>{% if data["IS_APPROVED"] %}Yes{% else %}No{% endif %}</td>
+          <td>{{ row["CREATED_DATE"] }}</td>
+          <td>{{ row["UPDATED_DATE"] }}</td>
+          {% if row["IS_OPEN"] and coordinator %}
+          <td><button value="{{ row['R_ID'] }}" name="request" type="submit" class="btn btn-success">Approve</button></td>
+          {% endif %}
+        </tr>
+    </form>
+      {% endfor %}
+    </tbody>
 </table>
 {% endblock %}
