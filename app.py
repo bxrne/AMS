@@ -201,6 +201,7 @@ def employees():
 
 @app.route('/assignments', methods=['GET', 'POST'])
 @login_required
+@coordinator_required
 def assignments():
     assignments = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -223,9 +224,7 @@ def assignments():
             "REQUEST_ID": REQUEST_ID,
             "DATE_ASSIGNED": DATE_ASSIGNED.strftime("%d-%b-%Y")
         }
-        # View all if coordinator, only yours in employee
-        if is_coordinator(session["uuid"]) or (not is_coordinator(session["uuid"]) and session["uuid"] == EMPLOYEE_ID):
-            assignments.append(asset)
+        assignments.append(asset)
 
     cur.close()
     connection.close()
@@ -238,6 +237,7 @@ def assignments():
 
 @app.route('/requests', methods=['GET', 'POST'])
 @login_required
+@coordinator_required
 def requests():
     requests = []
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
@@ -263,11 +263,7 @@ def requests():
             "CREATED_DATE": CREATED_DATE.strftime("%d-%b-%Y"),
            "UPDATED_DATE": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
         }
-        if not is_coordinator(session["uuid"]):
-            if EMPLOYEE_ID == session["uuid"]:
-                requests.append(_request)
-        else:
-            requests.append(_request)
+        requests.append(_request)
 
     cur.close()
     connection.close()
