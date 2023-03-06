@@ -12,36 +12,26 @@ Asset Management System
 
 	<a class="w-100 btn btn-lg btn-primary mb-3" href="/logout">Logout</a>
 
-	{% else %}
-
-
-<div class=" flex-column d-flex justify-content-center align-items-center">
-	<a class="w-75 btn btn-lg btn-outline-primary mb-3" href="/login">Login</a>
-	<a class="w-75 btn btn-lg btn-primary" href="/assets">Sign Up</a>
-</div>
-{% endif %}
-
-<!--MY ASSETS-->
-
-<h1>My Assets</h1>
-<table class="table table-striped table-responsive">
-	<thead>
-	  <tr>          
-		<th scope="col">Name</th>
-		<th scope="col">Brand</th>
-		<th scope="col">Model</th>
-		<th scope="col">Company</th>
-	  </tr>  
-	</thead>
-	<tbody>
-	  {% for asset in myassets %}
-		<tr>
-		  <td>{{ asset[2] }}</td>
-		  <td>{{ asset[3] }}</td>
-		  <td>{{ asset[4] }}</td>
-		  <td>{{ asset[5] }}</td>
+	<!--MY ASSETS-->
+	<h1>My Assets</h1>
+	<table class="table table-striped table-responsive">
+		<thead>
+			<tr>          
+				<th scope="col">Name</th>
+				<th scope="col">Brand</th>
+				<th scope="col">Model</th>
+				<th scope="col">Company</th>
+			</tr>  
+		</thead>
+		<tbody>
+			{% for asset in myassets %}
+			<tr>
+				<td>{{ asset[2] }}</td>
+				<td>{{ asset[3] }}</td>
+				<td>{{ asset[4] }}</td>
+				<td>{{ asset[5] }}</td>
 		</tr>
-	  {% endfor %}
+		{% endfor %}
 	</tbody>
 </table>
 
@@ -50,27 +40,35 @@ Asset Management System
 <h1>My Open Requests</h1>
 <table class="table table-striped table-responsive">
 	<thead>
-	  <tr>          
-		<th scope="col">Name</th>
-		<th scope="col">Brand</th>
-		<th scope="col">Model</th>
-		<th scope="col">Company</th>
-		<th scope="col">Date Created</th>
-		<th scope="col">Date Updated</th>
-	  </tr>  
+		<tr>          
+			<th scope="col">Name</th>
+			<th scope="col">Brand</th>
+			<th scope="col">Model</th>
+			<th scope="col">Company</th>
+			<th scope="col">Date Created</th>
+			<th scope="col">Date Updated</th>
+		</tr>  
 	</thead>
 	<tbody>
-	  {% for request in myrequests %}
+		{% for request in myrequests %}
 		<tr>
-		  <td>{{ request[2] }}</td>
-		  <td>{{ request[3] }}</td>
-		  <td>{{ request[4] }}</td>
-		  <td>{{ request[5] }}</td>
-		  <td>{{ request[6] }}</td>
-		  <td>{{ request[7] }}</td>
+			<td>{{ request[2] }}</td>
+			<td>{{ request[3] }}</td>
+			<td>{{ request[4] }}</td>
+			<td>{{ request[5] }}</td>
+			<td>{{ request[6] }}</td>
+			<td>{{ request[7] }}</td>
 		</tr>
-	  {% endfor %}
+		{% endfor %}
 	</tbody>
 </table>
+{% else %}
+
+
+<div class=" flex-column d-flex justify-content-center align-items-center">
+<a class="w-75 btn btn-lg btn-outline-primary mb-3" href="/login">Login</a>
+<a class="w-75 btn btn-lg btn-primary" href="/assets">Sign Up</a>
+</div>
+{% endif %}
 
 {% endblock %}
