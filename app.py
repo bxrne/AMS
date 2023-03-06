@@ -27,50 +27,55 @@ request_view = "SELECT R_ID, EMPLOYEE_ID, ASSET_ID, IS_OPEN, IS_APPROVED, CREATE
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
+
+# Login Required Decorator
 def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
+        # check if the user is logged in
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+        cur = connection.cursor()
         if 'uuid' in session:
-            # check if employee is approved
-            connection = oracledb.connect(user=user, password=password, dsn=conn_string)
-            cur = connection.cursor()
-            u = cur.execute("SELECT IS_APPROVED FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid']) + "").fetchone()[0]
-            if u == 0:
+            # check if that is a valid user
+            valid_user  = cur.execute("SELECT LOGIN_ID FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid']) + "").fetchone()[0]
+            if valid_user is None:
+                flash('User not found.')
+                return redirect(url_for('login'))
+            
+            # check if the user is approved
+            approved_user = cur.execute("SELECT IS_APPROVED FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid']) + "").fetchone()[0]
+            if approved_user is None:
                 flash('You are not approved yet.')
                 return redirect(url_for('home'))
-                
-            return f(*args, **kwargs)
-            
+
         else:
             flash('You need to login first.')
             return redirect(url_for('login'))
+            
+        return f(*args, **kwargs)
     return wrap
 
+# Coordinator Required Decorator
 def coordinator_required(f):
     @wraps(f)
+    @login_required
     def wrap(*args, **kwargs):
-        if 'uuid' in session:
-            connection = oracledb.connect(user=user, password=password, dsn=conn_string)
-            cur = connection.cursor()
-            xx = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.COORDINATOR WHERE EMPLOYEE_ID = " + str(session['uuid']))
-            if xx is not None:
-                return f(*args, **kwargs)
-            else:
-                flash('You are not a coordinator.')
-                return redirect(url_for('home'))
+        connection = oracledb.connect(user=user, password=password, dsn=conn_string)
+        cur = connection.cursor()
+        coordinator = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.COORDINATOR WHERE EMPLOYEE_ID = " + str(session['uuid']))
+        if coordinator is not None:
+            return f(*args, **kwargs)
         else:
-            flash('You need to login first.')
-            return redirect(url_for('login'))
+            flash('You are not a coordinator.')
+            return redirect(url_for('home'))
     return wrap
 
+# Client side check for coordinator
 def is_coordinator(uuid):
     connection = oracledb.connect(user=user, password=password, dsn=conn_string)
     cur = connection.cursor()
-    xx = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.COORDINATOR WHERE EMPLOYEE_ID = " + str(uuid))
-    if xx is not None:
-        return True
-    else:
-        return False
+    coordinator = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.COORDINATOR WHERE EMPLOYEE_ID = " + str(uuid))
+    return coordinator is not None
 
 @app.route('/')
 def home():
@@ -79,13 +84,21 @@ def home():
     if u is not None:
         connection = oracledb.connect(user=user, password=password, dsn=conn_string)
         cur = connection.cursor()
+
+        employee_id = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(u) + "").fetchone()[0]
+
         name = cur.execute("SELECT FIRST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(u) + "").fetchone()[0]
-        cur.close()
-        cur = connection.cursor()
-        myrequests = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYREQUESTS WHERE E_ID = " + str(u) + "").fetchall()
-        cur.close()
-        cur = connection.cursor()
-        myassets = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYASSETS WHERE E_ID = " + str(u) + "").fetchall()
+        myrequests = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYREQUESTS WHERE E_ID = " + str(employee_id) + "").fetchall()
+        myassets = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYASSETS WHERE E_ID = " + str(employee_id) + "").fetchall()
+
+        for i in range(len(myrequests)):
+            myrequests[i] = list(myrequests[i])
+            myrequests[i][6] = myrequests[i][6].strftime("%d-%b-%Y")
+            myrequests[i][7] = myrequests[i][7].strftime("%d-%b-%Y") if myrequests[i][7] is not None else "Not Updated"
+
+
+
+
         cur.close()
         connection.close()
     else:
@@ -276,6 +289,7 @@ def requests():
             "CREATED_DATE": CREATED_DATE.strftime("%d-%b-%Y"),
            "UPDATED_DATE": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
         }
+        print(IS_APPROVED, IS_OPEN)
         requests.append(_request)
 
     cur.close()
@@ -396,7 +410,7 @@ def create_request():
 
         cur.close()
         cur2 = connection.cursor()
-        cur2.execute("SELECT FIRST_NAME, LAST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE EMPLOYEE_ID = " + str(session['uuid']))
+        cur2.execute("SELECT FIRST_NAME, LAST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid']))
         cur2 = cur2.fetchone()
         name = cur2[0] + " " + cur2[1]
         connection.close()
@@ -406,7 +420,10 @@ def create_request():
         connection = oracledb.connect(user=user, password=password, dsn=conn_string)
 
         cur = connection.cursor()
-        cur.execute(f"INSERT INTO ASSETMANAGEMENT.REQUEST VALUES (DEFAULT, {session['uuid']}, {request.form['request']}, 1, 0, CURRENT_TIMESTAMP, NULL)")
+        employee_id = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid'])).fetchone()[0]
+        stm = f"INSERT INTO ASSETMANAGEMENT.REQUEST VALUES (DEFAULT, {employee_id}, {request.form['request']}, 1, 0, CURRENT_TIMESTAMP, NULL)"
+        print(stm)
+        cur.execute(stm)
         connection.commit()
         cur.close()
         connection.close()
@@ -430,12 +447,7 @@ def login():
             return redirect(url_for('home'))
     return render_template('login.html')
 
-#Create Assignment
-"""
-Request becomes not open
-Asset becomes not available
-assignment logged in asset history
-"""
+
 @app.route('/assignment/approve/', methods=['POST'])
 @login_required
 @coordinator_required

@@ -3,17 +3,22 @@
 {% block title %}Asset Management System{% endblock %}
 
 {% block header %}
+{% if name %}
+Welcome, {{name}}!
+{% else %}
 Asset Management System
+{% endif %}
 {% endblock %}
 
 {% block content %}
 {% if name %}
-	<h3>Welcome {{name}}</h3>
+<div class=" flex-column d-flex justify-content-center align-items-center">
+	<a class="w-75 btn btn-lg btn-primary mb-3 mt-3" href="/logout">Logout</a>
 
-	<a class="w-100 btn btn-lg btn-primary mb-3" href="/logout">Logout</a>
+</div>
 
 	<!--MY ASSETS-->
-	<h1>My Assets</h1>
+	<h1 class="mt-5">My Assets</h1>
 	<table class="table table-striped table-responsive">
 		<thead>
 			<tr>          
@@ -24,6 +29,7 @@ Asset Management System
 			</tr>  
 		</thead>
 		<tbody>
+			{% if myassets %}
 			{% for asset in myassets %}
 			<tr>
 				<td>{{ asset[2] }}</td>
@@ -32,12 +38,18 @@ Asset Management System
 				<td>{{ asset[5] }}</td>
 		</tr>
 		{% endfor %}
+		{% else %}
+		<tr>
+			<td colspan="4">No assets</td>
+		</tr>
+		{% endif %}
 	</tbody>
+
 </table>
 
 <!--MY OPEN REQUESTS-->
 
-<h1>My Open Requests</h1>
+<h1 class="mt-5">My Open Requests</h1>
 <table class="table table-striped table-responsive">
 	<thead>
 		<tr>          
@@ -50,6 +62,7 @@ Asset Management System
 		</tr>  
 	</thead>
 	<tbody>
+		{% if myrequests %}
 		{% for request in myrequests %}
 		<tr>
 			<td>{{ request[2] }}</td>
@@ -60,6 +73,11 @@ Asset Management System
 			<td>{{ request[7] }}</td>
 		</tr>
 		{% endfor %}
+		{% else %}
+		<tr>
+			<td colspan="6">No open requests</td>
+		</tr>
+		{% endif %}
 	</tbody>
 </table>
 {% else %}
