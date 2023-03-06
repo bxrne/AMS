@@ -71,12 +71,18 @@ def home():
         connection = oracledb.connect(user=user, password=password, dsn=conn_string)
         cur = connection.cursor()
         name = cur.execute("SELECT FIRST_NAME FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(u) + "").fetchone()[0]
+        cur.close()
+        cur = connection.cursor()
         myrequests = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYREQUESTS WHERE E_ID = " + str(u) + "").fetchall()
         cur.close()
         cur = connection.cursor()
         myassets = cur.execute("SELECT * FROM ASSETMANAGEMENT.MYASSETS WHERE E_ID = " + str(u) + "").fetchall()
         cur.close()
         connection.close()
+    else:
+        name = ""
+        myrequests = []
+        myassets = []
     return render_template('home.html', name=name, myrequests=myrequests, myassets=myassets)
 
 
@@ -140,7 +146,10 @@ def edit_asset(aid):
     if request.method == 'POST':
         available = 1 if request.form.get('available') == 'on' else 0
         retired = 1 if request.form.get('retired') == 'on' else 0
-
+        cur2 = connection.cursor()
+        cur2.execute("UPDATE ASSETMANAGEMENT.ASSET SET UPDATED_DATE = CURRENT_TIMESTAMP WHERE A_ID = " + aid + "")
+        connection.commit()
+        cur2.close()
         model = request.form['model'] if request.form['model'] != "" else A_MODEL
         brand = request.form['brand'] if request.form['brand'] != "" else BRAND
         name = request.form['name'] if request.form['name'] != "" else A_NAME
@@ -435,6 +444,10 @@ def approve_request():
         cur.execute(f"INSERT INTO ASSETMANAGEMENT.ASSET_HISTORY VALUES (DEFAULT, {asset_id}, {employee_id}, {request.form['request']}, DEFAULT, NULL)")
         connection.commit()
         cur.close()
+        cur1 = connection.cursor()
+        cur1.execute("UPDATE ASSETMANAGEMENT.REQUEST SET UPDATED_DATE = CURRENT_TIMESTAMP WHERE R_ID = " + str(request.form['request']))
+        cur1.close()
+        connection.commit()
         connection.close()
         return redirect(url_for('requests'))
 
