@@ -289,7 +289,6 @@ def requests():
             "CREATED_DATE": CREATED_DATE.strftime("%d-%b-%Y"),
            "UPDATED_DATE": UPDATED_DATE.strftime("%d-%b-%Y") if UPDATED_DATE is not None else "Not Updated"
         }
-        print(IS_APPROVED, IS_OPEN)
         requests.append(_request)
 
     cur.close()
@@ -422,7 +421,6 @@ def create_request():
         cur = connection.cursor()
         employee_id = cur.execute("SELECT EMPLOYEE_ID FROM ASSETMANAGEMENT.EMPLOYEE WHERE LOGIN_ID = " + str(session['uuid'])).fetchone()[0]
         stm = f"INSERT INTO ASSETMANAGEMENT.REQUEST VALUES (DEFAULT, {employee_id}, {request.form['request']}, 1, 0, CURRENT_TIMESTAMP, NULL)"
-        print(stm)
         cur.execute(stm)
         connection.commit()
         cur.close()
